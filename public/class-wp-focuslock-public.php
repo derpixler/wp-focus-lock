@@ -27,7 +27,7 @@ class WP_FocusLock_Public {
 
     $this->version = $version;
     $this->file = $file;
-    
+
     add_action( 'wp_enqueue_scripts', array( $this, 'public_enqueue_styles' ), 10, 1 );
     add_action( 'wp_enqueue_scripts', array( $this, 'public_enqueue_scripts' ), 10, 1 );
   }
@@ -48,48 +48,116 @@ class WP_FocusLock_Public {
     wp_enqueue_script( 'jquery_focuspoint', plugin_dir_url( __FILE__ ) . 'js/jquery.focuspoint.min.js', array('jquery'), $this->version, true );
     wp_enqueue_script( 'wp_focuslock', plugin_dir_url( __FILE__ ) . 'js/wp-focuslock.js', array('jquery', 'jquery_focuspoint'), $this->version, true );
   }
+
+  public function focus_coords( $attachment_id = false ){
+
+	  $coords = false;
+
+	  if( $attachment_id ){
+
+		  $meta = get_post_meta( $attachment_id, 'focuslock_coords', true);
+
+		  $coords = new stdClass();
+		  $coords->data_focus_x = '0';
+	      $coords->data_focus_y = '0';
+
+		  if ( $meta ) {
+			  $c = explode( '|', $meta );
+			  $coords->data_focus_x = $c[0];
+			  $coords->data_focus_y = $c[1];
+		  }
+
+	  }
+
+	  return $coords;
+
+  }
+
+  public function get_size( $size, $meta, $width, $height ){
+
+		$s = new stdClass();
+
+		if( ! empty( $size ) ){
+
+  			$s->width  = $meta[ 'sizes' ][ $size ][ 'width' ];
+  			$s->height = $meta[ 'sizes' ][ $size ][ 'height' ];
+
+  		} else {
+
+  			$s->width  = $meta[ 'width' ];
+  			$s->height = $meta[ 'height' ];
+
+		}
+
+		return $s;
+
+	}
+
 }
 
 
-function focuslock_image($attachment_id, $image_size = 'full', $additional_classes = '', $width = null, $height = null) {
+function get_focuslock_image( $args ){
+
+	if( ! isset( $args[ 'id' ] ) ) {
+		return new WP_Error( 'error', 'The attachment id is missing!' );
+	}
+
+	$default = [
+		'width'  => false,
+		'height' => false
+	];
+
+	$args = wp_parse_args( $args, $default );
+
+	$wp_focusLock_public = new WP_FocusLock_Public();
+
+	$image 			= new stdClass();
+	$image->meta 	= wp_get_attachment_metadata( $args[ 'id' ] );
+	$image->image 	= wp_get_attachment_image( $args[ 'id' ], $args['size']  );
+	$image->size 	= $wp_focusLock_public->get_size( $args[ 'size' ], $image->meta, $args[ 'width' ], $args[ 'height' ] );
+	$image->coords 	= $wp_focusLock_public->focus_coords( $args[ 'id' ] );
+	$image->classes = 'focuspoint ' . $args[ 'classes' ];
+
+	return $image;
+}
+
+
+function focuslock_image( $attachment_id, $image_size = false, $additional_classes = '', $width = false, $height = false ){
+
+	  $args = [
+	  	'id'		=> $attachment_id,
+	  	'size'		=> $image_size,
+	  	'classes'	=> $additional_classes,
+	  	'width'		=> $width,
+	  	'height'	=> $height,
+	  ];
+
+	  $image_args = get_focuslock_image( $args );
+
+	  $style = [];
+
+	  if( ! empty( $width ) ){
+	  	$style[] = 'width: ' . $image_args->size->width . '; ';
+	  }else{
+	  	$style[] = 'width: ' . $width . '; ';
+	  }
+
+	  if( ! empty( $height ) ){
+	  	$style[] = 'height: ' . $image_args->size->height . '; ';
+	  }else{
+	  	$style[] = 'height: ' . $height . '; ';
+	  }
+
+	  $attr = 'class="' . $image_args->classes . '" ';
+	  $attr .= 'data-focus-x=" ' . $image_args->coords->data_focus_x . '" ';
+	  $attr .= 'data-focus-y=" ' . $image_args->coords->data_focus_y . '" ';
+	  $attr .= 'data-focus-w=" ' . $image_args->size->width . '" ';
+	  $attr .= 'data-focus-h=" ' . $image_args->size->height . '" ';
   
-  if (empty($attachment_id)) {
-    echo '';
-    return;
-  }
+	  $html = '<div style="' . implode( $style ) . '" id="focuslock_image_' . $attachment_id . '" ' . $attr . ' >';
+	  $html .= $image_args->image;
+	  $html .= '</div>';
 
-  $meta = wp_get_attachment_metadata( $attachment_id );
-  $style = '';
-
-  if ($image_size == 'full') {
-    $size = [];
-    $size['width'] = $meta['width'];
-    $size['height'] = $meta['height'];
-  } else {
-    $size = $meta['sizes'][$image_size];
-  }
-
-  if ($width) {
-    $style .= 'width: ' . $width . ';';
-  }
-
-  if ($height) {
-    $style .= 'height: ' . $height . ';';
-  }
-
-  $coords = get_post_meta($attachment_id, 'focuslock_coords', true);
-
-  if ($coords) {
-    $coords = explode('|', $coords);
-  } else {
-    $coords[0] = '0';
-    $coords[1] = '0';
-  }
-
-  $html = '<div style="' . $style . '" class="focuspoint ' . $additional_classes . '" data-focus-x="' . $coords[0] . '" data-focus-y="' . $coords[1] . '" data-image-w="' . $size['width'] . '" data-image-h="' . $size['height'] . '">';
-  $html .= wp_get_attachment_image( $attachment_id, $image_size );
-  $html .= '</div>';
-
-  echo $html;
+  	echo $html;
 
 }
