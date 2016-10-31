@@ -77,19 +77,32 @@ class WP_FocusLock_Public {
 
 		$s = new stdClass();
 
-		if( ! empty( $size ) ){
-
-  			$s->width  = $meta[ 'sizes' ][ $size ][ 'width' ];
-  			$s->height = $meta[ 'sizes' ][ $size ][ 'height' ];
-
-  		} else {
+		if( $size == 'full' ){
 
   			$s->width  = $meta[ 'width' ];
   			$s->height = $meta[ 'height' ];
 
+  		} else {
+
+  			$s->width  = $meta[ 'sizes' ][ $size ][ 'width' ];
+  			$s->height = $meta[ 'sizes' ][ $size ][ 'height' ];
+
 		}
 
 		return $s;
+
+	}
+
+
+	public function get_focuslock_image_attributes ( $args, $size, $coords ){
+
+		$attr = 'class="focuspoint ' . $args['classes'] . '" ';
+		$attr .= 'data-focus-x="' . $coords->data_focus_x . '" ';
+		$attr .= 'data-focus-y="' . $coords->data_focus_y . '" ';
+		$attr .= 'data-focus-w="' . $size->width . '" ';
+		$attr .= 'data-focus-h="' . $size->height . '" ';
+
+		return 'id="focuslock_image_' . $args['id'] . '" ' . $attr;
 
 	}
 
@@ -116,48 +129,40 @@ function get_focuslock_image( $args ){
 	$image->image 	= wp_get_attachment_image( $args[ 'id' ], $args['size']  );
 	$image->size 	= $wp_focusLock_public->get_size( $args[ 'size' ], $image->meta, $args[ 'width' ], $args[ 'height' ] );
 	$image->coords 	= $wp_focusLock_public->focus_coords( $args[ 'id' ] );
-	$image->classes = 'focuspoint ' . $args[ 'classes' ];
+	$image->classes = $args[ 'classes' ];
+	$image->attr	= $wp_focusLock_public->get_focuslock_image_attributes( $args, $image->size, $image->coords );
+
+	$image->background_position = get_post_meta( $args[ 'id' ], 'focuslock_css_percent_coords', true );
 
 	return $image;
 }
 
 
-function focuslock_image( $attachment_id, $image_size = false, $additional_classes = '', $width = false, $height = false ){
+function focuslock_image( $attachment_id, $image_size = 'full', $additional_classes = '', $width = false, $height = false, $echo = false ){
 
-	  $args = [
-	  	'id'		=> $attachment_id,
-	  	'size'		=> $image_size,
-	  	'classes'	=> $additional_classes,
-	  	'width'		=> $width,
-	  	'height'	=> $height,
-	  ];
+	$args = [
+		'id'		=> $attachment_id,
+		'size'		=> $image_size,
+		'classes'	=> $additional_classes,
+		'width'		=> $width,
+		'height'	=> $height,
+	];
 
-	  $image_args = get_focuslock_image( $args );
+	$image_args = get_focuslock_image( $args );
+	$image_args->id = $args['id'];
 
-	  $style = [];
+	if( $echo == true ){
 
-	  if( ! empty( $width ) ){
-	  	$style[] = 'width: ' . $image_args->size->width . '; ';
-	  }else{
-	  	$style[] = 'width: ' . $width . '; ';
-	  }
+		$html = '<div ' . $image_args->attr . '" >';
+		$html .= $image_args->image;
+		$html .= '</div>';
 
-	  if( ! empty( $height ) ){
-	  	$style[] = 'height: ' . $image_args->size->height . '; ';
-	  }else{
-	  	$style[] = 'height: ' . $height . '; ';
-	  }
+  		echo $html;
+		return true;
+	}
 
-	  $attr = 'class="' . $image_args->classes . '" ';
-	  $attr .= 'data-focus-x=" ' . $image_args->coords->data_focus_x . '" ';
-	  $attr .= 'data-focus-y=" ' . $image_args->coords->data_focus_y . '" ';
-	  $attr .= 'data-focus-w=" ' . $image_args->size->width . '" ';
-	  $attr .= 'data-focus-h=" ' . $image_args->size->height . '" ';
-  
-	  $html = '<div style="' . implode( $style ) . '" id="focuslock_image_' . $attachment_id . '" ' . $attr . ' >';
-	  $html .= $image_args->image;
-	  $html .= '</div>';
+	do_action( 'focuslock_image', $image_args );
 
-  	echo $html;
+	return $image_args;
 
 }

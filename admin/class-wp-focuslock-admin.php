@@ -37,11 +37,11 @@ class WP_FocusLock_Admin {
 
     add_filter( 'attachment_fields_to_edit', array( $this, 'media_field_setup' ), 10, 2 );
     add_action( 'edit_attachment', array( $this, 'save_attachment') );
-    
+
     // Load admin JS & CSS
     add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_styles' ), 10, 1 );
     add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ), 10, 1 );
-  
+
     add_shortcode( 'focuslock', array( $this, 'focuslock_shortcode') );
 
     add_action( 'wp_ajax_get_focus_points', array( $this, 'get_focus_points' ) );
@@ -110,8 +110,10 @@ class WP_FocusLock_Admin {
     if ( $attachment_id ) {
       $focuslock_coords = $_POST['focuslock_coords'];
       $focuslock_mouse_coords = $_POST['focuslock_mouse_coords'];
+	  $focuslock_css_percent_coords = $_POST['focuslock_css_percent_coords'];
       update_post_meta( $attachment_id, 'focuslock_coords', $focuslock_coords );
       update_post_meta( $attachment_id, 'focuslock_mouse_coords', $focuslock_mouse_coords );
+      update_post_meta( $attachment_id, 'focuslock_css_percent_coords', $focuslock_css_percent_coords );
     }
   }
 
@@ -119,8 +121,10 @@ class WP_FocusLock_Admin {
       if ( isset( $_REQUEST['attachments'][$attachment_id]['focuslock_coords'] ) ) {
           $focuslock_coords = $_REQUEST['attachments'][$attachment_id]['focuslock_coords'];
           $focuslock_mouse_coords = $_REQUEST['attachments'][$attachment_id]['focuslock_mouse_coords'];
+          $focuslock_css_percent_coords = $_REQUEST['attachments'][$attachment_id]['focuslock_css_percent_coords'];
           update_post_meta( $attachment_id, 'focuslock_coords', $focuslock_coords );
           update_post_meta( $attachment_id, 'focuslock_mouse_coords', $focuslock_mouse_coords );
+	      update_post_meta( $attachment_id, 'focuslock_css_percent_coords', $focuslock_css_percent_coords );
       }
   }
 
@@ -147,7 +151,7 @@ class WP_FocusLock_Admin {
   }
 
   public function focuslock_shortcode( $atts , $content = null ) {
-    
+
     if (isset($atts['size'])) {
       $size = $atts['size'];
     } else {

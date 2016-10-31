@@ -8,7 +8,7 @@ if ( ! window.console )
   "use strict"
 
   function focuslock() {
-    
+
     var t = this;
 
     $.extend( t, {
@@ -35,7 +35,7 @@ if ( ! window.console )
           if (t.image_wrapper.hasClass('locked')) {
             return;
           }
-          
+
           var imageW = $(this).width();
           var imageH = $(this).height();
 
@@ -48,6 +48,13 @@ if ( ! window.console )
           var centeredMouseX = mouseX - (t.dotSize / 2);
           var centeredMouseY = mouseY - (t.dotSize / 2);
 
+
+			//Calculate CSS Percentages
+			var percentageX = (mouseX/imageW)*100;
+			var percentageY = (mouseY/imageH)*100;
+			var backgroundPositionCSS = percentageX.toFixed(0) + '%|' + percentageY.toFixed(0) + '%';
+
+
           if (t.image_wrapper.find(".focuslock-dot").length == 0) {
             t.createDot(centeredMouseY, centeredMouseX);
           } else {
@@ -56,6 +63,7 @@ if ( ! window.console )
 
         t.focuslock_coords = focusX + '|' + focusY;
         t.focuslock_mouse_coords = centeredMouseX + '|' + centeredMouseY;
+        t.focuslock_css_percent_coords = backgroundPositionCSS;
 
         });
 
@@ -87,8 +95,8 @@ if ( ! window.console )
           $('.save-focuslock, .cancel-focuslock').show();
         } else {
           t.image_wrapper.addClass('locked');
-          $('.edit-focuslock').show();    
-          $('.save-focuslock, .cancel-focuslock').hide();     
+          $('.edit-focuslock').show();
+          $('.save-focuslock, .cancel-focuslock').hide();
         }
       },
 
@@ -99,13 +107,13 @@ if ( ! window.console )
           .css('top', top + 'px')
           .css('left', left + 'px')
           .css('width', t.dotSize + 'px')
-          .css('height', t.dotSize + 'px'));   
+          .css('height', t.dotSize + 'px'));
       },
 
       moveDot: function(top, left) {
           t.image_wrapper.find(".focuslock-dot")
           .css('top', top + 'px')
-          .css('left', left + 'px');    
+          .css('left', left + 'px');
       },
 
       save: function() {
@@ -113,14 +121,15 @@ if ( ! window.console )
           action: 'save_focus_points',
           attachment_id: t.attachment_id,
           focuslock_coords: t.focuslock_coords,
-          focuslock_mouse_coords: t.focuslock_mouse_coords
+          focuslock_mouse_coords: t.focuslock_mouse_coords,
+		  focuslock_css_percent_coords: t.focuslock_css_percent_coords
         }, function( rsp ) {
 
           $('.saved-message').fadeIn('fast');
           setTimeout(function() {
             $('.saved-message').fadeOut('fast');
           }, 2000);
-        });       
+        });
       }
 
     });
